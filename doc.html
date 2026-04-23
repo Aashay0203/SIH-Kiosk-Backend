@@ -1,0 +1,1873 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DelhiMed — Backend Documentation</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b0f1a;
+        --surface: #111827;
+        --surface2: #1a2235;
+        --border: #1f2d42;
+
+        --auth: #6ee7f7;
+        --appt: #a78bfa;
+        --doctor: #34d399;
+        --health: #f472b6;
+        --med: #fbbf24;
+        --payment: #fb923c;
+        --queue: #60a5fa;
+        --report: #4ade80;
+        --user: #e879f9;
+
+        --schema-color: #94a3b8;
+        --fn-color: #67e8f9;
+
+        --get: #34d399;
+        --post: #60a5fa;
+        --put: #fbbf24;
+        --patch: #fb923c;
+        --delete: #f87171;
+
+        --text: #e2e8f0;
+        --muted: #64748b;
+        --accent: #38bdf8;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Syne", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* ── GRID BG ── */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background-image:
+          linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+      }
+
+      .wrap {
+        position: relative;
+        z-index: 1;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 24px 80px;
+      }
+
+      /* ── HERO ── */
+      header {
+        padding: 60px 0 40px;
+        display: flex;
+        align-items: flex-start;
+        gap: 28px;
+        flex-wrap: wrap;
+      }
+      .logo-badge {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #38bdf8, #6366f1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 800;
+        flex-shrink: 0;
+        box-shadow: 0 0 32px rgba(56, 189, 248, 0.35);
+      }
+      .header-text h1 {
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        font-weight: 800;
+        line-height: 1.1;
+        background: linear-gradient(90deg, #e2e8f0, #38bdf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .header-text p {
+        color: var(--muted);
+        margin-top: 6px;
+        font-size: 0.95rem;
+      }
+      .version-pill {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        color: #38bdf8;
+      }
+
+      /* ── FILE TREE ── */
+      .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 14px;
+        margin-top: 48px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      .tree {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px 24px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+        line-height: 1.9;
+        overflow-x: auto;
+      }
+      .tree-root {
+        color: #38bdf8;
+        font-weight: 700;
+      }
+      .tree-dir {
+        color: #a78bfa;
+      }
+      .tree-file {
+        color: #94a3b8;
+      }
+      .tree-file span {
+        color: #64748b;
+      }
+
+      /* ── ROUTE SECTION ── */
+      .route-section {
+        margin-top: 20px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+
+      .route-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s;
+      }
+      .route-header:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .route-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .route-filename {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .route-base {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-left: auto;
+      }
+      .chevron {
+        color: var(--muted);
+        font-size: 0.75rem;
+        transition: transform 0.25s;
+        margin-left: 8px;
+      }
+      .open .chevron {
+        transform: rotate(90deg);
+      }
+
+      .route-body {
+        display: none;
+        overflow: hidden;
+        border-top: 1px solid var(--border);
+      }
+      .route-body.visible {
+        display: block;
+      }
+
+      .route-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .route-table th {
+        background: rgba(255, 255, 255, 0.04);
+        font-size: 0.68rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+        padding: 10px 16px;
+        text-align: left;
+      }
+      .route-table td {
+        padding: 11px 16px;
+        font-size: 0.84rem;
+        border-top: 1px solid var(--border);
+        vertical-align: top;
+      }
+      .route-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .method {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 5px;
+        display: inline-block;
+        min-width: 54px;
+        text-align: center;
+      }
+      .GET {
+        background: rgba(52, 211, 153, 0.15);
+        color: var(--get);
+        border: 1px solid rgba(52, 211, 153, 0.3);
+      }
+      .POST {
+        background: rgba(96, 165, 250, 0.15);
+        color: var(--post);
+        border: 1px solid rgba(96, 165, 250, 0.3);
+      }
+      .PUT {
+        background: rgba(251, 191, 36, 0.15);
+        color: var(--put);
+        border: 1px solid rgba(251, 191, 36, 0.3);
+      }
+      .PATCH {
+        background: rgba(251, 146, 60, 0.15);
+        color: var(--patch);
+        border: 1px solid rgba(251, 146, 60, 0.3);
+      }
+      .DELETE {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--delete);
+        border: 1px solid rgba(248, 113, 113, 0.3);
+      }
+
+      .route-path {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.8rem;
+        color: #cbd5e1;
+      }
+      .route-desc {
+        color: #94a3b8;
+        font-size: 0.83rem;
+      }
+
+      /* ── SCHEMA CARDS ── */
+      .schema-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        margin-top: 4px;
+      }
+      .schema-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .schema-card-header {
+        padding: 13px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      .schema-icon {
+        font-size: 1rem;
+      }
+      .schema-name {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #e2e8f0;
+      }
+      .schema-body {
+        padding: 12px 16px;
+      }
+      .field-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 3px 0;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+      }
+      .field-row:last-child {
+        border-bottom: none;
+      }
+      .field-bullet {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--schema-color);
+        flex-shrink: 0;
+        margin-top: 6px;
+      }
+      .field-name {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.76rem;
+        color: #e2e8f0;
+      }
+      .field-nested {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.74rem;
+        color: var(--muted);
+        padding-left: 14px;
+      }
+
+      /* ── FUNCTION CARDS ── */
+      .fn-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 16px;
+        margin-top: 4px;
+      }
+      .fn-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .fn-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .fn-file-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: rgba(103, 232, 249, 0.1);
+        color: #67e8f9;
+        border: 1px solid rgba(103, 232, 249, 0.25);
+      }
+      .fn-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .fn-table td {
+        padding: 9px 16px;
+        font-size: 0.82rem;
+        border-top: 1px solid var(--border);
+        vertical-align: top;
+      }
+      .fn-name {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.8rem;
+        color: #67e8f9;
+        white-space: nowrap;
+      }
+      .fn-desc {
+        color: #94a3b8;
+      }
+
+      /* ── MIDDLEWARE SECTION ── */
+      .mid-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 16px;
+        margin-top: 4px;
+      }
+      .mid-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 18px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .mid-icon-box {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+      .mid-file {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #e2e8f0;
+      }
+      .mid-desc {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+
+      /* ── SCROLLBAR ── */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 99px;
+      }
+
+      /* ── ANIMATIONS ── */
+      @keyframes fadeSlide {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .route-section,
+      .schema-card,
+      .fn-card,
+      .mid-card,
+      .tree {
+        animation: fadeSlide 0.4s ease both;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+      <header>
+        <div class="logo-badge">DM</div>
+        <div class="header-text">
+          <h1>DelhiMed Backend</h1>
+          <p>
+            Healthcare platform · Node.js / Express · MongoDB · Gemini AI ·
+            Razorpay
+          </p>
+          <span class="version-pill">v1.0.0-MVP</span>
+        </div>
+      </header>
+
+      <!-- ═══════════════════════════ TREE ═══════════════════════════ -->
+      <div class="section-label">📁 Project Structure</div>
+      <div class="tree">
+        <div><span class="tree-root">backend/</span></div>
+        <div>
+          &nbsp;├──
+          <span class="tree-file"
+            >server.js
+            <span>— Express app entry, mounts all routers</span></span
+          >
+        </div>
+        <div>&nbsp;├── <span class="tree-file">package.json</span></div>
+        <div>&nbsp;├── <span class="tree-file">.env</span></div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├── <span class="tree-dir">controllers/</span></div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">appointmentController.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">authControllers.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">doctorController.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">healthProfileController.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">medicationController.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">paymentController.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">queueController.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">reportController.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;└──
+          <span class="tree-file">userController.js</span>
+        </div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├── <span class="tree-dir">routes/</span></div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">authRoutes.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">appointment.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">doctorRoutes.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">healthProfileRoute.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">medicationRoute.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">paymentRoute.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">queueRoute.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">reportRoute.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">statusRoute.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;└──
+          <span class="tree-file">userRoute.js</span>
+        </div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├── <span class="tree-dir">models/</span></div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">appointmentSchema.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">docterSchema.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">medicationSchema.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">patientHealthSumSchema.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">queueSchema.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">reportSchema.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;└──
+          <span class="tree-file">userSchema.js</span>
+        </div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├── <span class="tree-dir">middleware/</span></div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">authmiddleware.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">adminOnly.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;└──
+          <span class="tree-file">roleMiddleware.js</span>
+        </div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├── <span class="tree-dir">services/</span></div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;└──
+          <span class="tree-file">geminiService.js</span>
+        </div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├── <span class="tree-dir">jobs/</span></div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;├──
+          <span class="tree-file">processReport.js</span>
+        </div>
+        <div>
+          &nbsp;│&nbsp;&nbsp;&nbsp;└──
+          <span class="tree-file">updateHealthProfile.js</span>
+        </div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;└── <span class="tree-dir">utils/</span></div>
+        <div>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└──
+          <span class="tree-file">calculateETA.js</span>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════ ROUTES ═══════════════════════════ -->
+      <div class="section-label">🔀 Routes</div>
+
+      <!-- AUTH -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(110, 231, 247, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--auth)"></div>
+          <span class="route-filename" style="color: var(--auth)"
+            >authRoutes.js</span
+          >
+          <span class="route-base">/api/auth</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/auth/signup</td>
+              <td class="route-desc">
+                Registers a new user account and returns JWT token.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/auth/login</td>
+              <td class="route-desc">
+                Authenticates user or doctor credentials and returns JWT token.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- APPOINTMENT -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(167, 139, 250, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--appt)"></div>
+          <span class="route-filename" style="color: var(--appt)"
+            >appointment.js</span
+          >
+          <span class="route-base">/api/appointment</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/appointment/my-appointments</td>
+              <td class="route-desc">
+                Returns a protected test response with current user id.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/appointment/booked-slots</td>
+              <td class="route-desc">
+                Returns already booked slots for a doctor on a given date.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/appointment/book</td>
+              <td class="route-desc">
+                Validates slot and creates a Razorpay order for appointment
+                booking.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/appointment/my-appointements</td>
+              <td class="route-desc">
+                Returns logged-in patient appointments with doctor details.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/appointment/:id/status</td>
+              <td class="route-desc">
+                Returns queue position, ETA, and live appointment status.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method PUT">PUT</span></td>
+              <td class="route-path">/api/appointment/:id/arrive</td>
+              <td class="route-desc">
+                Verifies appointment PIN and marks patient as arrived.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- DOCTOR -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(52, 211, 153, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--doctor)"></div>
+          <span class="route-filename" style="color: var(--doctor)"
+            >doctorRoutes.js</span
+          >
+          <span class="route-base">/api/doctor</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/doctor/signup</td>
+              <td class="route-desc">
+                Creates doctor account (admin-only) and returns JWT token.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/doctor/allDoctors</td>
+              <td class="route-desc">
+                Returns doctor listing with key profile and availability fields.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/doctor/:id</td>
+              <td class="route-desc">
+                Returns full details for a specific doctor.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- HEALTH PROFILE -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(244, 114, 182, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--health)"></div>
+          <span class="route-filename" style="color: var(--health)"
+            >healthProfileRoute.js</span
+          >
+          <span class="route-base">/api/healthProfile</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/healthProfile/</td>
+              <td class="route-desc">
+                Returns complete patient health profile.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method PUT">PUT</span></td>
+              <td class="route-path">/api/healthProfile/user-data</td>
+              <td class="route-desc">
+                Saves manual user-provided health information.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method DELETE">DELETE</span></td>
+              <td class="route-path">/api/healthProfile/</td>
+              <td class="route-desc">
+                Deletes patient health profile document.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/healthProfile/ai-only</td>
+              <td class="route-desc">
+                Returns only the AI-extracted section of the profile.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/healthProfile/user-only</td>
+              <td class="route-desc">
+                Returns only the user-provided section of the profile.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- MEDICATION -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(251, 191, 36, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--med)"></div>
+          <span class="route-filename" style="color: var(--med)"
+            >medicationRoute.js</span
+          >
+          <span class="route-base">/api/medication</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/medication/</td>
+              <td class="route-desc">
+                Returns all medications for the logged-in user.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/medication/</td>
+              <td class="route-desc">
+                Creates a new medication record for the user.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method PATCH">PATCH</span></td>
+              <td class="route-path">/api/medication/reset-daily</td>
+              <td class="route-desc">
+                Resets the taken flag to false for all user medications.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method PATCH">PATCH</span></td>
+              <td class="route-path">/api/medication/:id</td>
+              <td class="route-desc">
+                Updates the taken status of one medication entry.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- PAYMENT -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(251, 146, 60, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--payment)"></div>
+          <span class="route-filename" style="color: var(--payment)"
+            >paymentRoute.js</span
+          >
+          <span class="route-base">/api/payment</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/payment/verify</td>
+              <td class="route-desc">
+                Verifies Razorpay signature and finalizes a paid appointment.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/payment/upi-confirm</td>
+              <td class="route-desc">
+                Confirms UPI payment flow and finalizes appointment with
+                token/PIN.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/payment/cash-confirm</td>
+              <td class="route-desc">
+                Finalizes cash appointment and reserves slot/token.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- QUEUE -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(96, 165, 250, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--queue)"></div>
+          <span class="route-filename" style="color: var(--queue)"
+            >queueRoute.js</span
+          >
+          <span class="route-base">/api/queue</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method PUT">PUT</span></td>
+              <td class="route-path">/api/queue/next</td>
+              <td class="route-desc">
+                Advances doctor queue to next token and marks previous as
+                served.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- REPORT -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(74, 222, 128, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--report)"></div>
+          <span class="route-filename" style="color: var(--report)"
+            >reportRoute.js</span
+          >
+          <span class="route-base">/api/report</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/report/upload</td>
+              <td class="route-desc">
+                Uploads report to Cloudinary, saves metadata, starts AI
+                background processing.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/report/</td>
+              <td class="route-desc">
+                Returns all reports for the logged-in user.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/report/:id/ai-status</td>
+              <td class="route-desc">
+                Returns AI processing state, summary, and AI error for one
+                report.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/report/:id/regenerate-summary</td>
+              <td class="route-desc">
+                Resets AI state and re-triggers background summary generation.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/report/:id</td>
+              <td class="route-desc">
+                Returns one report document for the user.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method PATCH">PATCH</span></td>
+              <td class="route-path">/api/report/:id</td>
+              <td class="route-desc">Updates report metadata fields.</td>
+            </tr>
+            <tr>
+              <td><span class="method DELETE">DELETE</span></td>
+              <td class="route-path">/api/report/:id</td>
+              <td class="route-desc">
+                Deletes report from Cloudinary and database.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- USER -->
+      <div class="route-section" style="background: var(--surface)">
+        <div
+          class="route-header"
+          onclick="toggle(this)"
+          style="
+            background: linear-gradient(
+              90deg,
+              rgba(232, 121, 249, 0.07),
+              transparent
+            );
+          "
+        >
+          <div class="route-dot" style="background: var(--user)"></div>
+          <span class="route-filename" style="color: var(--user)"
+            >userRoute.js</span
+          >
+          <span class="route-base">/api/user</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="route-body">
+          <table class="route-table">
+            <tr>
+              <th>Method</th>
+              <th>Path</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td><span class="method GET">GET</span></td>
+              <td class="route-path">/api/user/profile</td>
+              <td class="route-desc">
+                Returns logged-in user profile (without password).
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method PATCH">PATCH</span></td>
+              <td class="route-path">/api/user/profile</td>
+              <td class="route-desc">
+                Updates editable profile fields for the logged-in user.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="method POST">POST</span></td>
+              <td class="route-path">/api/user/profile/picture</td>
+              <td class="route-desc">
+                Uploads and updates profile picture via Cloudinary.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════ SCHEMAS ═══════════════════════════ -->
+      <div class="section-label">🗄️ MongoDB Schemas</div>
+      <div class="schema-grid">
+        <!-- User -->
+        <div class="schema-card">
+          <div
+            class="schema-card-header"
+            style="border-left: 3px solid var(--user)"
+          >
+            <span class="schema-icon">👤</span>
+            <span class="schema-name">userSchema.js</span>
+          </div>
+          <div class="schema-body">
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">name</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">phone</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">email</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">password</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">role</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">abhaId</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">profilePicture</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">createdAt / updatedAt</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Doctor -->
+        <div class="schema-card">
+          <div
+            class="schema-card-header"
+            style="border-left: 3px solid var(--doctor)"
+          >
+            <span class="schema-icon">🩺</span>
+            <span class="schema-name">docterSchema.js</span>
+          </div>
+          <div class="schema-body">
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">name</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">phone</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">email</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">password</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">speciality</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">startTime</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">avgConsultTime</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">fees</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Appointment -->
+        <div class="schema-card">
+          <div
+            class="schema-card-header"
+            style="border-left: 3px solid var(--appt)"
+          >
+            <span class="schema-icon">📅</span>
+            <span class="schema-name">appointmentSchema.js</span>
+          </div>
+          <div class="schema-body">
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">patientId</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">doctorId</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">date</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">slotTime</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">appointmentNumber</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">pinHash</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">status</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">paymentStatus</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">createdAt / updatedAt</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medication -->
+        <div class="schema-card">
+          <div
+            class="schema-card-header"
+            style="border-left: 3px solid var(--med)"
+          >
+            <span class="schema-icon">💊</span>
+            <span class="schema-name">medicationSchema.js</span>
+          </div>
+          <div class="schema-body">
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">userId</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">name</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">dosage</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">time</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">taken</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">createdAt / updatedAt</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Queue -->
+        <div class="schema-card">
+          <div
+            class="schema-card-header"
+            style="border-left: 3px solid var(--queue)"
+          >
+            <span class="schema-icon">🔢</span>
+            <span class="schema-name">queueSchema.js</span>
+          </div>
+          <div class="schema-body">
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">doctorId</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">date</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">currentNumber</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">lastTokenNumber</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">lastUpdatedAt</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">createdAt / updatedAt</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report -->
+        <div class="schema-card">
+          <div
+            class="schema-card-header"
+            style="border-left: 3px solid var(--report)"
+          >
+            <span class="schema-icon">📄</span>
+            <span class="schema-name">reportSchema.js</span>
+          </div>
+          <div class="schema-body">
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">userId</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name"
+                >fileName / fileUrl / fileType / fileSize</span
+              >
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">cloudinaryPublicId</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name"
+                >reportType / doctorClinicName / reportDate</span
+              >
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">uploadedBy / tags</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">aiStatus</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">aiSummary.testTable</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">aiSummary.plainSummary</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">aiSummary.extractedHealthData</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">aiSummary.generatedAt</span>
+            </div>
+            <div class="field-row">
+              <div class="field-bullet"></div>
+              <span class="field-name">aiError</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Health Profile -->
+        <div class="schema-card" style="grid-column: span 2">
+          <div
+            class="schema-card-header"
+            style="border-left: 3px solid var(--health)"
+          >
+            <span class="schema-icon">🏥</span>
+            <span class="schema-name">patientHealthSumSchema.js</span>
+          </div>
+          <div
+            class="schema-body"
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr 1fr;
+              gap: 0 24px;
+            "
+          >
+            <div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: var(--muted);
+                  margin-bottom: 6px;
+                  font-weight: 700;
+                "
+              >
+                aiExtracted
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">bloodGroup</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">detectedAllergies</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">currentMedications</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">labValues.hemoglobin</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">labValues.wbc</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">labValues.platelets</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">labValues.bloodSugar</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">labValues.creatinine / urea</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">labValues.sodium / potassium</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">labValues.sgpt / sgot</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name"
+                  >labValues.bilirubin / cholesterol</span
+                >
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">personalizedInsights</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">trends.hemoglobin / wbc / sugar</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">lastUpdated</span>
+              </div>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: var(--muted);
+                  margin-bottom: 6px;
+                  font-weight: 700;
+                "
+              >
+                specialFlags
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">anemia</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">infection</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">kidneyIssue</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">liverIssue</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">diabetesRisk</span>
+              </div>
+              <br />
+              <div
+                style="
+                  font-size: 0.7rem;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: var(--muted);
+                  margin-bottom: 6px;
+                  font-weight: 700;
+                "
+              >
+                quickSummary
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">criticalAlerts</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">shortSummary</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">lastGenerated</span>
+              </div>
+            </div>
+            <div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: var(--muted);
+                  margin-bottom: 6px;
+                  font-weight: 700;
+                "
+              >
+                userProvided
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">conditions.diabetes</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">conditions.hypertension</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">conditions.thyroid</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">pastEvents.surgeries</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">pastEvents.injuries</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">pastEvents.majorIllness</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">medications / allergies</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">familyHistory.diabetes</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">familyHistory.heartDisease</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">familyHistory.cancer</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">lifestyle.smoking / alcohol</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">currentSymptoms</span>
+              </div>
+              <div class="field-row">
+                <div class="field-bullet"></div>
+                <span class="field-name">completedAt</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════ SERVICES / JOBS / UTILS ═══════════════════════════ -->
+      <div class="section-label">⚙️ Services · Jobs · Utils</div>
+      <div class="fn-grid">
+        <div class="fn-card">
+          <div class="fn-card-header">
+            <span class="fn-file-badge">services/geminiService.js</span>
+          </div>
+          <table class="fn-table">
+            <tr>
+              <td class="fn-name">getGeminiModel</td>
+              <td class="fn-desc">
+                Returns Gemini model id from env or default fallback.
+              </td>
+            </tr>
+            <tr>
+              <td class="fn-name">fetchFileAsBase64</td>
+              <td class="fn-desc">
+                Downloads remote report file and converts it to base64 with
+                content type.
+              </td>
+            </tr>
+            <tr>
+              <td class="fn-name">resolveMimeType</td>
+              <td class="fn-desc">
+                Resolves effective MIME type using response header or file
+                extension fallback.
+              </td>
+            </tr>
+            <tr>
+              <td class="fn-name">parseGeminiJSON</td>
+              <td class="fn-desc">
+                Cleans Gemini response text and parses strict JSON output.
+              </td>
+            </tr>
+            <tr>
+              <td class="fn-name">analyzeReport</td>
+              <td class="fn-desc">
+                Sends one uploaded report to Gemini, returns structured
+                extracted summary.
+              </td>
+            </tr>
+            <tr>
+              <td class="fn-name">buildHealthProfile</td>
+              <td class="fn-desc">
+                Sends multiple report summaries to Gemini, returns consolidated
+                profile insights.
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="fn-card">
+          <div class="fn-card-header">
+            <span class="fn-file-badge">jobs/processReport.js</span>
+          </div>
+          <table class="fn-table">
+            <tr>
+              <td class="fn-name">processReportInBackground</td>
+              <td class="fn-desc">
+                Updates report AI state, runs Gemini analysis, stores aiSummary,
+                triggers profile refresh job.
+              </td>
+            </tr>
+          </table>
+          <div style="height: 12px"></div>
+          <div
+            class="fn-card-header"
+            style="border-top: 1px solid var(--border)"
+          >
+            <span class="fn-file-badge">jobs/updateHealthProfile.js</span>
+          </div>
+          <table class="fn-table">
+            <tr>
+              <td class="fn-name">updateHealthProfileAI</td>
+              <td class="fn-desc">
+                Aggregates completed report summaries, calls Gemini, upserts
+                aiExtracted profile data.
+              </td>
+            </tr>
+            <tr>
+              <td class="fn-name">updateHealthProfileManual</td>
+              <td class="fn-desc">
+                Upserts user-provided health form data into profile with a
+                completion timestamp.
+              </td>
+            </tr>
+          </table>
+          <div style="height: 12px"></div>
+          <div
+            class="fn-card-header"
+            style="border-top: 1px solid var(--border)"
+          >
+            <span class="fn-file-badge">utils/calculateETA.js</span>
+          </div>
+          <table class="fn-table">
+            <tr>
+              <td class="fn-name">calculateETA</td>
+              <td class="fn-desc">
+                Computes remaining queue count and estimated wait from token
+                difference and avg consult time.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════ MIDDLEWARE ═══════════════════════════ -->
+      <div class="section-label">🛡️ Middleware</div>
+      <div class="mid-grid">
+        <div class="mid-card">
+          <div
+            class="mid-icon-box"
+            style="background: rgba(56, 189, 248, 0.12)"
+          >
+            🔑
+          </div>
+          <div>
+            <div class="mid-file">authmiddleware.js</div>
+            <div class="mid-desc">
+              Verifies JWT token from Authorization header; attaches decoded
+              user to req.user.
+            </div>
+          </div>
+        </div>
+        <div class="mid-card">
+          <div
+            class="mid-icon-box"
+            style="background: rgba(248, 113, 113, 0.12)"
+          >
+            🚫
+          </div>
+          <div>
+            <div class="mid-file">adminOnly.js</div>
+            <div class="mid-desc">
+              Blocks non-admin requests; used to protect privileged routes like
+              doctor signup.
+            </div>
+          </div>
+        </div>
+        <div class="mid-card">
+          <div
+            class="mid-icon-box"
+            style="background: rgba(167, 139, 250, 0.12)"
+          >
+            🎭
+          </div>
+          <div>
+            <div class="mid-file">roleMiddleware.js</div>
+            <div class="mid-desc">
+              Checks req.user.role against allowed roles; returns 403 if access
+              is denied.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+      <div
+        style="
+          margin-top: 60px;
+          padding-top: 24px;
+          border-top: 1px solid var(--border);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+        "
+      >
+        <span
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 0.78rem;
+            color: var(--muted);
+          "
+          >DelhiMed Backend · Aashay Gupta · ClinicFlow</span
+        >
+        <span
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 0.78rem;
+            color: var(--muted);
+          "
+          >Generated 2026</span
+        >
+      </div>
+    </div>
+
+    <script>
+      function toggle(header) {
+        const body = header.nextElementSibling;
+        const isOpen = body.classList.contains("visible");
+        body.classList.toggle("visible", !isOpen);
+        header.classList.toggle("open", !isOpen);
+      }
+      // Open first two by default
+      document.querySelectorAll(".route-header").forEach((h, i) => {
+        if (i < 2) toggle(h);
+      });
+    </script>
+  </body>
+</html>
