@@ -112,6 +112,30 @@ export const login = wrapAsync(async (req, res) => {
     });
 });
 
+export const getSession = wrapAsync(async (req, res) => {
+    const { userId, role, email } = req.user;
+
+    // Doctor accounts live in a separate collection.
+    const account = role === "doctor"
+        ? await Doctor.findById(userId).select("_id name email phone")
+        : await User.findById(userId).select("_id name email phone role");
+
+    if (!account) {
+        return res.status(401).json({ success: false, message: "Session user not found" });
+    }
+
+    res.status(200).json({
+        success: true,
+        user: {
+            id: account._id,
+            name: account.name,
+            email: account.email,
+            phone: account.phone,
+            role: role || account.role,
+        },
+    });
+});
+
 // ✅ Sync — wrapAsync not needed
 export const logout = (req, res) => {
     const isProduction = process.env.NODE_ENV === 'production';
