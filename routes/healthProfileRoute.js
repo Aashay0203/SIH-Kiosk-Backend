@@ -6,6 +6,7 @@ import {
     deleteHealthProfile,
     aiExtractSection,
     userProvided,
+    generateDoctorSummary,
 } from "../controllers/healthProfileController.js";
 import { validate } from "../middleware/validate.js";
 import { healthProfileUserDataSchema } from "../validators/healthProfileValidators.js";
@@ -22,5 +23,7 @@ router.put(
 router.delete("/", protect, deleteHealthProfile);
 router.get("/ai-only", protect, aiExtractSection);
 router.get("/user-only", protect, userProvided);
+router.get("/summary", protect, generateDoctorSummary);
+router.get("/summary/:patientId", protect, generateDoctorSummary);
 
 export default router;

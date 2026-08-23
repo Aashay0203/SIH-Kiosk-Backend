@@ -73,7 +73,11 @@ app.use(errorHandler);
 
 const connectMongoDb = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URL);
+        const mongoUri = process.env.MONGODB_URL || process.env.MONGO_URI;
+        if (!mongoUri) {
+            throw new Error("MONGODB_URL or MONGO_URI is not defined in .env");
+        }
+        await mongoose.connect(mongoUri);
         logger.info("MongoDB connected successfully");
     } catch (err) {
         // ✅ BUG FIX: log properly and exit — don't run server without DB

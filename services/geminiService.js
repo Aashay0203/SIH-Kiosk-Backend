@@ -210,3 +210,54 @@ Rules: Use most recent value when duplicates exist across reports. status must b
         return null;
     }
 }
+
+// ───────────────── SYNTHESIZE CLINICAL SUMMARY (DOCTOR OPD) ─────────────────
+export async function synthesizeClinicalSummary(patientData) {
+    if (!patientData) return null;
+    if (!process.env.GEMINI_API_KEY) {
+        logger.warn({ message: "GEMINI_API_KEY is not set for clinical summary synthesis" });
+        return null;
+    }
+
+    const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+    });
+
+    const prompt = `
+You are an expert Clinical Decision Support AI assistant helping an OPD physician in a high-density hospital.
+Synthesize the provided patient intake data into a crisp, physician-ready 1-page clinical summary.
+
+PATIENT INTAKE DATA:
+${JSON.stringify(patientData, null, 2)}
+
+STRICT RULES:
+1. Return ONLY valid JSON, no markdown code fence, no preamble.
+2. Structure the summary for rapid 10-second physician scanning.
+3. If AYUSH / Ayurveda parameters are present, summarize Prakriti, Agni, and lifestyle implications.
+4. Highlight any emergency red flags or abnormal values prominently.
+
+OUTPUT JSON FORMAT:
+{
+  "oneLiner": "String: 1-sentence clinical executive summary (e.g. '45M with acute severe throbbing right temporal headache x 2 days with photophobia, h/o HTN.')",
+  "chiefComplaintHpi": "String: Clear narrative incorporating SOCRATES elements (Site, Onset, Character, Radiation, Associations, Timing, Exacerbating/Relieving, Severity).",
+  "pastAndMedsSummary": "String: Summary of past conditions, surgeries, current medications and known allergies.",
+  "ayushSummary": "String or null: Ayurvedic assessment (Prakriti, Agni, Koshtha balance & dietary advice if relevant).",
+  "keyLabFindings": "String: Critical/abnormal lab parameters and recent trends.",
+  "redFlagAlerts": ["Array of critical warnings, e.g., 'Severe chest pain radiating to jaw - Rule out ACS'"],
+  "differentialSuggestions": ["List of top 3-4 clinical differential considerations for the physician"],
+  "suggestedWorkup": ["List of 2-4 recommended immediate checks/investigations"]
+}
+`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: getGeminiModel(),
+            contents: [{ parts: [{ text: prompt }] }],
+        });
+
+        return parseGeminiJSON(response.text);
+    } catch (error) {
+        logger.error({ message: "Gemini API error during clinical summary synthesis", error: error.message });
+        return null;
+    }
+}

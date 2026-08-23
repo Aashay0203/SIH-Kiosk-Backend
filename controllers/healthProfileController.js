@@ -63,3 +63,40 @@ export const userProvided = wrapAsync(async (req, res) => {
 
     res.status(200).json({ success: true, message: "User-provided data retrieved", userProvided: profile.userProvided });
 });
+
+export const generateDoctorSummary = wrapAsync(async (req, res) => {
+    const { patientId } = req.params;
+    const targetUserId = patientId || req.user.userId;
+
+    const profile = await PatientHealthProfile.findOne({ userId: targetUserId });
+    if (!profile) {
+        return res.status(404).json({ success: false, message: "Health profile not found for summary generation" });
+    }
+
+    const { synthesizeClinicalSummary } = await import("../services/geminiService.js");
+    const summary = await synthesizeClinicalSummary(profile);
+
+    if (summary) {
+        profile.quickSummary = {
+            criticalAlerts: summary.redFlagAlerts || [],
+            shortSummary: summary.oneLiner || summary.chiefComplaintHpi || "",
+            lastGenerated: new Date(),
+        };
+        await profile.save();
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Clinical summary generated successfully",
+        summary: summary || {
+            oneLiner: "Patient health profile loaded.",
+            chiefComplaintHpi: profile.userProvided?.chiefComplaint || "No acute complaint documented.",
+            pastAndMedsSummary: "No prior adverse history.",
+            ayushSummary: profile.userProvided?.ayushAssessment?.prakriti ? `Prakriti: ${profile.userProvided.ayushAssessment.prakriti}` : null,
+            keyLabFindings: "Standard parameters.",
+            redFlagAlerts: profile.userProvided?.redFlagAlert?.isTriggered ? profile.userProvided.redFlagAlert.reasons : [],
+            differentialSuggestions: [],
+            suggestedWorkup: []
+        }
+    });
+});

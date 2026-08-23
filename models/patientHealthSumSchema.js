@@ -113,6 +113,46 @@ const patientHealthProfileSchema = new mongoose.Schema(
 
             // 🤒 Symptoms
             currentSymptoms: [String],
+            chiefComplaint: { type: String, default: null },
+
+            // 🩺 SOCRATES Clinical History of Present Illness
+            socratesHpi: {
+                site: { type: String, default: null },
+                onset: { type: String, default: null },
+                character: { type: String, default: null },
+                radiation: { type: String, default: null },
+                associations: [String],
+                timing: { type: String, default: null },
+                exacerbating: { type: String, default: null },
+                severity: { type: Number, min: 1, max: 10, default: null },
+            },
+
+            // 🌿 AYUSH (Ayurveda) Pariksha & Assessment
+            ayushAssessment: {
+                prakriti: { type: String, default: null }, // e.g. Vata, Pitta, Kapha, Vata-Pitta
+                vikriti: { type: String, default: null },
+                agni: { type: String, default: null },     // Manda (low), Tikshna (sharp), Vishama (irregular), Sama (balanced)
+                koshtha: { type: String, default: null },  // Krura (hard), Mrudu (soft), Madhyama (medium)
+                dietType: { type: String, default: null },
+                appetite: { type: String, default: null },
+                sleepQuality: { type: String, default: null },
+            },
+
+            // 🚨 Red-Flag Emergency Triage Flag
+            redFlagAlert: {
+                isTriggered: { type: Boolean, default: false },
+                severity: { type: String, enum: ["CRITICAL", "URGENT", "MODERATE", "NONE"], default: "NONE" },
+                reasons: [String],
+                triggeredAt: { type: Date, default: null },
+            },
+
+            // 🆔 Consent & ABHA Information
+            consentAndAbha: {
+                abhaId: { type: String, default: null },
+                consentGranted: { type: Boolean, default: false },
+                consentTimestamp: { type: Date, default: null },
+                language: { type: String, default: "en" },
+            },
 
             completedAt: { type: Date, default: null },
         },
