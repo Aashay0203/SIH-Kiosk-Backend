@@ -73,16 +73,28 @@ app.use(errorHandler);
 
 const connectMongoDb = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URL);
+        if (!process.env.MONGODB_URL) {
+            throw new Error("MONGODB_URL is not configured");
+        }
+
+        await mongoose.connect(process.env.MONGODB_URL, {
+            serverSelectionTimeoutMS: 10000,
+        });
         logger.info("MongoDB connected successfully");
     } catch (err) {
-        // ✅ BUG FIX: log properly and exit — don't run server without DB
-        logger.error({ message: "MongoDB connection failed", error: err });
+        logger.error(
+            `MongoDB connection failed (${err.name}, code ${err.code ?? "unknown"}): ${err.message}`
+        );
         process.exit(1);
     }
 };
 
-app.listen(PORT, async () => {
-    logger.info(`Server is running on port ${PORT}`);
+const startServer = async () => {
     await connectMongoDb();
-});
+
+    app.listen(PORT, () => {
+        logger.info(`Server is running on port ${PORT}`);
+    });
+};
+
+startServer();

@@ -37,7 +37,7 @@ export const patchUser = wrapAsync(async (req, res) => {
     const user = await User.findByIdAndUpdate(
         req.user.userId,
         { $set: updates },
-        { new: true, runValidators: true }
+        { returnDocument: "after", runValidators: true }
     ).select('-password');
 
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
@@ -74,7 +74,7 @@ export const uploadprofilePic = wrapAsync(async (req, res) => {
     const user = await User.findByIdAndUpdate(
         req.user.userId,
         { $set: { profilePicture: result.secure_url } },
-        { new: true }
+        { returnDocument: "after" }
     ).select('-password');
 
     res.status(200).json({ success: true, user, profilePicture: result.secure_url });

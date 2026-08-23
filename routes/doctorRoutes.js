@@ -10,10 +10,11 @@ import { doctorSignup } from "../controllers/authControllers.js";
 import { signupLimiter } from "../middleware/rateLimiter.js";
 import { validate } from '../middleware/validate.js';
 import doctorSignupSchema from '../validators/doctorValidators.js';
+import { onlyAdminEmail } from "../middleware/adminOnly.js";
 
 
 
-router.post("/add", validate(doctorSignupSchema), signupLimiter, protect, doctorSignup);
+router.post("/add", validate(doctorSignupSchema), signupLimiter, protect, onlyAdminEmail, doctorSignup);
 router.get("/allDoctors", getAllDoctors);
 router.get(
     "/today-appointments",

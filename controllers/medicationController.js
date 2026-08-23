@@ -47,7 +47,7 @@ export const updateMedication = wrapAsync(async (req, res) => {
     const updatedMed = await Medication.findByIdAndUpdate(
         medicationId,
         { taken: req.body.taken },
-        { new: true }
+        { returnDocument: "after" }
     );
 
     res.status(200).json({ success: true, med: updatedMed });

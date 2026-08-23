@@ -4,7 +4,7 @@ import logger from "../utils/logger.js"
 
 // ───────────────── CONFIG ─────────────────
 function getGeminiModel() {
-    return process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    return process.env.GEMINI_MODEL || "gemini-3.6-flash";
 }
 
 // ───────────────── FILE FETCH ─────────────────
@@ -33,6 +33,10 @@ function resolveMimeType(fileType, contentType) {
 
 // ───────────────── SAFE JSON PARSER ─────────────────
 function parseGeminiJSON(text) {
+    if (!text || typeof text !== "string") {
+        throw new Error("Gemini returned an empty response");
+    }
+
     try {
         const clean = text.replace(/```json|```/gi, "").trim();
         return JSON.parse(clean);
@@ -132,21 +136,31 @@ PLAIN SUMMARY RULES (for the "plainSummary" array):
 `;
 
     try {
-        const response = await ai.models.generateContent({
-            model: getGeminiModel(),
-            contents: [
-                {
-                    parts: [
-                        { inlineData: { mimeType, data: base64 } },
-                        { text: prompt },
+        let response;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+            try {
+                response = await ai.models.generateContent({
+                    model: getGeminiModel(),
+                    contents: [
+                        {
+                            parts: [
+                                { inlineData: { mimeType, data: base64 } },
+                                { text: prompt },
+                            ],
+                        },
                     ],
-                },
-            ],
-        });
+                });
+                break;
+            } catch (error) {
+                if (!isRetryableGeminiError(error) || attempt === 3) throw error;
+                await wait(attempt * 1000);
+            }
+        }
 
         return parseGeminiJSON(response.text);
     } catch (error) {
-        logger.error({ message: "Gemini API error during report analysis", error: error.message });
+        const status = error.status || error.code || error.error?.code || "unknown";
+        logger.error(`Gemini API error during report analysis (status ${status}): ${error.message}`);
         return null;
     }
 }
@@ -210,3 +224,10 @@ Rules: Use most recent value when duplicates exist across reports. status must b
         return null;
     }
 }
+
+function isRetryableGeminiError(error) {
+    const status = Number(error.status || error.code || error.error?.code);
+    return [429, 500, 502, 503, 504].includes(status);
+}
+
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));

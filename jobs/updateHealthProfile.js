@@ -153,7 +153,7 @@ export async function updateHealthProfileAI(userId) {
         const profile = await PatientHealthProfile.findOneAndUpdate(
             { userId },
             { aiExtracted: aiExtractedData },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: "after" }
         );
 
         logger.info({
@@ -190,7 +190,7 @@ export async function updateHealthProfileManual(userId, userProvidedData) {
                     completedAt: new Date(),
                 },
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: "after" }
         );
 
         logger.info({

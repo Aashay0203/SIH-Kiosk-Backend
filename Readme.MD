@@ -11,10 +11,10 @@ Full-stack healthcare platform powering doctor appointments, medication tracking
 
 ### Backend
 
+- [Getting Started](#-getting-started)
 - [Tech Stack (Backend/Frontend)](#-tech-stack)
 - [Project Structure](#-project-structure)
 - [Environment Variables](#-environment-variables)
-- [Getting Started](#-getting-started)
 - [Backend Architecture](#-backend-architecture)
 - [API Routes](#-api-routes)
   - [Auth](#auth----apiauth)
@@ -41,6 +41,63 @@ Full-stack healthcare platform powering doctor appointments, medication tracking
 
 - [Known Issues / Gotchas](#-known-issues--gotchas)
 - [Full Documentation Reference](#-full-documentation-reference)
+
+---
+
+## 🚀 Getting Started
+
+### Backend Setup
+
+```bash
+# 1. Navigate to backend directory
+cd backend
+
+# 2. Install dependencies
+npm install
+
+# 3. Create .env file (see section below)
+
+# 4. Start development server
+npm run dev
+
+# 5. Start production server
+npm start
+```
+
+Backend server runs on `http://localhost:8080` by default.
+
+### Frontend Setup
+
+```bash
+# 1. Navigate to frontend directory
+cd frontend
+
+# 2. Install dependencies
+npm install
+
+# 3. Start development server
+npm run dev
+
+# 4. Build for production
+npm run build
+
+# 5. Preview production build
+npm run preview
+```
+
+Frontend dev server runs on `http://localhost:5173` by default (Vite).
+
+### Running Both Together
+
+```bash
+# Terminal 1: Start Backend
+cd backend && npm run dev
+
+# Terminal 2: Start Frontend
+cd frontend && npm run dev
+```
+
+Then open: `http://localhost:5173` in your browser (frontend will proxy API calls to backend)
 
 ---
 
@@ -221,63 +278,6 @@ TWILIO_ACCOUNT_SID=your_twilio_sid
 TWILIO_AUTH_TOKEN=your_twilio_token
 TWILIO_PHONE=your_twilio_phone
 ```
-
----
-
-## 🚀 Getting Started
-
-### Backend Setup
-
-```bash
-# 1. Navigate to backend directory
-cd backend
-
-# 2. Install dependencies
-npm install
-
-# 3. Create .env file (see section below)
-
-# 4. Start development server
-npm run dev
-
-# 5. Start production server
-npm start
-```
-
-Backend server runs on `http://localhost:8080` by default.
-
-### Frontend Setup
-
-```bash
-# 1. Navigate to frontend directory
-cd frontend
-
-# 2. Install dependencies
-npm install
-
-# 3. Start development server
-npm run dev
-
-# 4. Build for production
-npm run build
-
-# 5. Preview production build
-npm run preview
-```
-
-Frontend dev server runs on `http://localhost:5173` by default (Vite).
-
-### Running Both Together
-
-```bash
-# Terminal 1: Start Backend
-cd backend && npm run dev
-
-# Terminal 2: Start Frontend
-cd frontend && npm run dev
-```
-
-Then open: `http://localhost:5173` in your browser (frontend will proxy API calls to backend)
 
 ---
 

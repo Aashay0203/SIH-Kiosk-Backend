@@ -20,7 +20,7 @@ export const confirmAppointment = async (appointment, paymentStatus, paymentMeth
     const queue = await Queue.findOneAndUpdate(
         { doctorId: appointment.doctorId, date: normalizedDate },
         { $inc: { lastTokenNumber: 1 } },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: "after" }
     );
 
     const { rawPin, pinHash } = await generatePinAndHash();

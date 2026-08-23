@@ -26,7 +26,7 @@ export const checkClaimStatus = async (req, res) => {
                 lastChecked: new Date(),
                 rawApiResponse: apiResult,
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: "after" }
         );
 
         // Notify if credited and not already notified
