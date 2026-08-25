@@ -231,3 +231,129 @@ function isRetryableGeminiError(error) {
 }
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+// ───────────────── KIOSK: NEXT QUESTION (SOCRATES) ─────────────────
+const KIOSK_SYSTEM_PROMPT = `You are a clinical history-taking assistant conducting a structured patient interview before a doctor's consultation, based on the SOCRATES framework (Site, Onset, Character, Radiation, Associated symptoms, Timing, Exacerbating/relieving factors, Severity).
+
+Rules:
+- If this is the patient's FIRST statement (no prior chief complaint established), identify their chief complaint in a few words and ask your first SOCRATES follow-up question.
+- Otherwise, review the conversation so far and ask the next most clinically useful SOCRATES question that hasn't been covered yet.
+- Ask ONE question at a time, in simple, plain language suitable for text-to-speech playback to a patient with possibly low health literacy.
+- For every question, also provide 2-4 short tappable answer options (mcqOptions) covering the most likely answers, so patients who prefer touch over speech can respond without talking. Keep each option under 4 words, in the same language as the question. If the question genuinely has no sensible fixed options (e.g. "describe your pain in your own words"), return an empty array — but prefer providing options whenever the question has a natural bounded set of answers (yes/no, body locations, durations, severity levels, etc).
+- Detect red flags: if the patient describes symptoms suggesting a medical emergency (e.g. chest pain with breathlessness, stroke symptoms like facial drooping/slurred speech/sudden weakness, severe uncontrolled bleeding, loss of consciousness), set redFlag to a short description of the concern. Otherwise set redFlag to null.
+- Mark isComplete true once you have covered chief complaint, onset, character, associated symptoms, and severity at minimum — do not drag the interview out unnecessarily.
+- Always respond in the same language as the patient's most recent message.
+- Respond with ONLY valid JSON, no markdown fences, no preamble. Format exactly:
+{"chiefComplaint": "string or null if already established", "nextQuestion": "string", "mcqOptions": ["string", "..."], "isComplete": boolean, "redFlag": "string or null"}`;
+
+export async function getNextQuestion(transcript, chiefComplaint) {
+    if (!process.env.GEMINI_API_KEY)
+        throw new Error("GEMINI_API_KEY is not set.");
+
+    const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+    });
+
+    const conversationText = transcript
+        .map(t => `${t.role === "patient" ? "Patient" : "AI"}: ${t.text}`)
+        .join("\n");
+
+    const prompt = `${KIOSK_SYSTEM_PROMPT}
+
+Current chief complaint on file: ${chiefComplaint || "none yet — extract from conversation"}
+
+Conversation so far:
+${conversationText}`;
+
+    try {
+        let response;
+        let parsed;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+            try {
+                response = await ai.models.generateContent({
+                    model: getGeminiModel(),
+                    contents: [{ parts: [{ text: prompt }] }],
+                });
+                parsed = parseGeminiJSON(response.text); // moved inside the loop
+                break;
+            } catch (error) {
+                if (attempt === 3) throw error;
+                await wait(attempt * 1000);
+            }
+        }
+        return parsed;
+    } catch (error) {
+        const status = error.status || error.code || error.error?.code || "unknown";
+        logger.error(`Gemini API error during kiosk voice turn (status ${status}): ${error.message}`);
+        throw error; // controller needs to know this failed — don't silently return null here
+    }
+}
+
+const KIOSK_SUMMARY_PROMPT = `You are generating a structured clinical intake note for a doctor, based on a kiosk-recorded patient interview conducted before their consultation.
+
+You will receive:
+1. The full patient-AI conversation transcript
+2. The patient's existing health profile (if any prior history exists)
+3. Any documents the patient uploaded at the kiosk today (lab reports, prescriptions), with their AI-extracted findings if analysis has completed, or a note that analysis is still in progress
+
+Write clinical fields in plain clinical English regardless of the patient's spoken language — doctors reviewing this expect standard clinical shorthand. Do NOT hallucinate values not present in the transcript or provided context.
+
+Return ONLY valid JSON, no markdown, no preamble, in exactly this shape:
+{
+  "chiefComplaint": "string",
+  "hpi": "string — history of present illness, narrative form",
+  "pastHistory": "string — past medical/surgical history, drawing on the health profile if relevant",
+  "drugAllergyHistory": "string — current medications and known allergies",
+  "familyHistory": "string",
+  "personalHistory": "string — lifestyle factors: smoking, alcohol, occupation if mentioned",
+  "reviewOfSystems": "string",
+  "plainSummary": "string — a SINGLE short paragraph (not an array), written in {{LANGUAGE}}, simple enough to read aloud to the patient via text-to-speech, recapping what was discussed",
+  "redFlags": ["string — short description of any urgent/emergency concern, empty array if none"]
+}
+
+Leave any field as an empty string "" if the transcript and context genuinely don't cover it — do not invent content to fill a field.`;
+
+export async function generateKioskStructuredSummary({
+    transcript,
+    language,
+    mode,
+    healthProfileContext,
+    reportsContext,
+}) {
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set.");
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    const conversationText = transcript
+        .map((t) => `${t.role === "patient" ? "Patient" : "AI"}: ${t.text}`)
+        .join("\n");
+
+    const prompt = `${KIOSK_SUMMARY_PROMPT.replace("{{LANGUAGE}}", language || "the patient's spoken language")}
+
+Interview mode: ${mode === "ayush" ? "AYUSH (also note any relevant dosha/lifestyle observations if the patient volunteered them)" : "standard"}
+
+CONVERSATION TRANSCRIPT:
+${conversationText}
+
+PATIENT HEALTH PROFILE:
+${healthProfileContext || "No prior health profile on file."}
+
+DOCUMENTS UPLOADED TODAY:
+${reportsContext || "No documents uploaded."}`;
+
+    let response;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+            response = await ai.models.generateContent({
+                model: getGeminiModel(),
+                contents: [{ parts: [{ text: prompt }] }],
+            });
+            break;
+        } catch (error) {
+            if (!isRetryableGeminiError(error) || attempt === 3) throw error;
+            await wait(attempt * 1000);
+        }
+    }
+
+    return parseGeminiJSON(response.text);
+}

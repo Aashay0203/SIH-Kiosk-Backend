@@ -26,6 +26,7 @@ import reportRoute from "./routes/reportRoute.js";
 import userRoute from "./routes/userRoute.js";
 import healthProfileRoute from "./routes/healthProfileRoute.js";
 import adminRoute from "./routes/adminRoute.js";
+import kioskRouter from "./routes/kioskRoute.js";
 
 // ✅ BUG FIX: fallback to 8080 if PORT missing from .env
 const PORT = process.env.PORT || 8080;
@@ -53,8 +54,9 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use("/api/auth", authRoute);
 app.use("/api/appointments", appointmentRoute);
@@ -66,6 +68,7 @@ app.use("/api/reports", reportRoute);
 app.use("/api/user", userRoute);
 app.use("/api/healthProfile", healthProfileRoute);
 app.use("/api/admin", adminRoute);
+app.use("/api/kiosk", kioskRouter);
 
 // Sentry error handler must come BEFORE your own errorHandler
 Sentry.setupExpressErrorHandler(app);

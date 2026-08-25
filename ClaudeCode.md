@@ -292,6 +292,19 @@ GET    /api/admin/today                       ← Get today's appointments (admi
 [Ayushman Bharat integration routes]
 ```
 
+#### Kiosk Routes (`/api/kiosk`)
+
+```text
+POST   /api/kiosk/start                         <- Create a KioskHistory session
+POST   /api/kiosk/:sessionId/voice-answer       <- Accept an audio answer and return the next question + WAV audio
+GET    /api/kiosk/:sessionId                    <- Fetch the current kiosk session
+```
+
+The currently registered kiosk router contains only the three endpoints above.
+The frontend also calls `POST /api/kiosk/:sessionId/upload-doc` and
+`POST /api/kiosk/:sessionId/generate-summary`; those endpoints must be added to
+the backend before the document-upload and summary screens can work.
+
 ### 4.3 Critical Express Ordering Rule
 
 Static route segments MUST be registered **before** dynamic `/:id` params in the same router file, or Express will match the literal string as an ID:
@@ -324,6 +337,101 @@ const date = new Date(Date.UTC(+y, +m - 1, +d));
 { "success": false, "message": "..." }
 ```
 
+### 4.6 Kiosk Voice Workflow (Sarvam + Gemini)
+
+The kiosk voice turn is a synchronous pipeline:
+
+```text
+KioskStart
+  -> POST /api/kiosk/start { patientId, appointmentId, language, mode }
+  -> sessionId
+KioskConverse records microphone audio as WebM
+  -> multipart POST /api/kiosk/:sessionId/voice-answer
+  -> multer writes a temporary file in backend/uploads/
+  -> Sarvam Saaras v3 transcribes the file
+  -> transcript is appended to KioskHistory
+  -> Gemini getNextQuestion() selects the next adaptive question
+  -> Sarvam Bulbul v3 converts that question to speech
+  -> WAV chunks are merged into one valid WAV buffer
+  -> temporary input file is deleted
+  -> JSON response contains transcript, question, flags, completion state, and base64 WAV
+```
+
+#### Sarvam Configuration
+
+- Dependency: `sarvamai` (`^1.1.8`)
+- Required environment variable: `SARVAM_API_KEY`
+- Client initialization: `new SarvamAIClient({ apiSubscriptionKey: process.env.SARVAM_API_KEY })`
+- Never commit API keys, place them only in the local environment file or deployment secret store.
+- `SARVAM_MODEL` is present in the environment, but the kiosk service currently selects its models explicitly.
+
+#### Speech-to-Text (`services/sarvamService.js`)
+
+`speechToText(filePath, language)` validates the path, opens it with Node's
+built-in `node:fs` `createReadStream`, and calls:
+
+```js
+client.speechToText.transcribe({
+  file: fs.createReadStream(filePath),
+  model: "saaras:v3",
+  mode: "transcribe",
+});
+```
+
+The service returns `response.transcript`. The current implementation accepts
+`language` for API compatibility, but does not send it to Sarvam; do not assume
+the selected kiosk language changes STT behavior until this is wired explicitly.
+
+#### Text-to-Speech (`services/sarvamService.js`)
+
+`textToSpeech(text, language)` calls Bulbul v3 with the selected language code
+and the `ritu` speaker:
+
+```js
+client.textToSpeech.convert({
+  text,
+  language_code: language,
+  model: "bulbul:v3",
+  speaker: "ritu",
+});
+```
+
+Sarvam returns an `audios` array of base64-encoded WAV chunks. Do not return
+`Buffer.from(response.audios.join(""), "base64")`: concatenating complete WAV
+files creates invalid headers. Use `mergeWavChunks()` from
+`utils/wavUtils.js`, which validates each chunk, extracts PCM data, checks that
+the audio formats match, and builds one corrected WAV header.
+
+#### Voice Turn Contract
+
+The upload route uses `multer({ dest: "uploads/" })` and expects the multipart
+field name `audioFile`. The frontend currently appends the field as `audio`, so
+these names must be aligned before voice recording works end to end. The
+response currently has this shape:
+
+```json
+{
+  "transcribedText": "...",
+  "nextQuestion": "...",
+  "chiefComplaint": "...",
+  "isComplete": false,
+  "redFlag": null,
+  "audioUrl": "<base64 WAV>"
+}
+```
+
+The frontend should assign the returned base64 WAV to an audio element and play
+it. If the API later returns a data URL, use the `audio/wav;base64,` prefix;
+otherwise the raw base64 string is not a browser audio source by itself.
+
+#### Failure and Cleanup Rules
+
+- Reject a voice turn with `400` when no file is uploaded and `404` when the session does not exist.
+- Delete the multer temporary file after a successful turn.
+- In the catch path, check that the file exists before deleting it so failed Sarvam, Gemini, or TTS calls do not leave uploads behind.
+- Log the server-side error, but do not expose API keys or provider request details in the response.
+- Keep audio files out of MongoDB; only persist transcript text and session metadata.
+
 ---
 
 ## 5. FRONTEND ROUTING MAP
@@ -349,6 +457,10 @@ const date = new Date(Date.UTC(+y, +m - 1, +d));
 /reports/:id                  → ReportDetails.jsx
 /health-profile               → PatientDetails.jsx
 /health-profile/setup         → HealthProfileSetup/
+/kiosk/start                  → KioskStart.jsx
+/kiosk/:sessionId/converse    → KioskConverse.jsx
+/kiosk/:sessionId/docs        → KioskDocUpload.jsx
+/kiosk/:sessionId/summary     → KioskSummary.jsx
 ```
 
 ### Doctor (role = 'doctor')
@@ -601,6 +713,36 @@ const date = new Date(Date.UTC(+y, +m - 1, +d));
   timestamps: { createdAt, updatedAt }
 }
 ```
+
+### 6.9 Kiosk History Schema
+
+```javascript
+{
+  patientId: ObjectId (ref: "User"),
+  appointmentId: ObjectId (ref: "Appointment"),
+  language: String (default: "hi"),
+  mode: String (enum: "standard"|"ayush", default: "standard"),
+  transcript: [{
+    role: String (enum: "ai"|"patient"),
+    text: String,
+    audioUrl: String,
+    timestamp: Date
+  }],
+  chiefComplaint: String,
+  redFlags: [String],
+  digitizedDocs: [{ fileUrl, ocrText, extracted, docDate }],
+  structuredSummary: {
+    chiefComplaint, hpi, pastHistory, drugAllergyHistory,
+    familyHistory, personalHistory, reviewOfSystems, plainSummary
+  },
+  status: String (enum: "in-progress"|"summarized"|"pushed-to-his"),
+  timestamps: { createdAt, updatedAt }
+}
+```
+
+The current voice controller persists patient and AI transcript entries,
+chief complaint, red flags, and session metadata. It does not persist the
+generated audio buffer; the response carries the audio for immediate playback.
 
 ---
 
