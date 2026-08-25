@@ -39,6 +39,7 @@ const uploadToCloudinary = (buffer, options) =>
 export const startSession = async (req, res) => {
     try {
         const { patientId, appointmentId, language, mode } = req.body;
+        console.log(req.body);
         const session = await KioskHistory.create({ patientId, appointmentId, language, mode });
         res.status(201).json({ sessionId: session._id });
     } catch (err) {

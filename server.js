@@ -34,7 +34,7 @@ const app = express();
 
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://saharamed.vercel.app'
+    'https://sih-kiosk-fronted.vercel.app'
 ];
 
 const corsOptions = {
